@@ -19,8 +19,7 @@ If you use this code in your research, please cite:
 This package contains the XL-Diff channel extrapolation implementation.
 The original pretrained checkpoint is included at
 `checkpoints/paper_original/model_best.pt`. Dataset files are required
-separately for training and evaluation. Frequency-domain and time-domain
-experiments are excluded.
+separately for training and evaluation.
 
 ## Package contents
 
