@@ -52,15 +52,6 @@ python train.py --gpu 0 --train CDL-C --seed 42 \
   --epochs 2000 --output_root outputs/seed42
 ```
 
-Training saves `model_best.pt` when the validation noise-reconstruction loss
-improves and updates `model_latest.pt` for resuming. The bundled paper checkpoint
-is named `model_best.pt`; its weights are unchanged.
-
-The unused standalone GAN generator has been removed. This changes random-number
-consumption during initialization, so a new training run is not expected to be
-bitwise identical to historical runs with the same seed. The diffusion model,
-discriminator architecture, active losses, and paper checkpoint are retained.
-
 To resume while retaining the model, optimizer, discriminator, and EMA states:
 
 ```bash
@@ -74,14 +65,10 @@ python train.py --gpu 0 --train CDL-C --seed 42 \
 The default checkpoint is `checkpoints/paper_original/model_best.pt`.
 
 ```bash
-python evaluate.py --train CDL-C --test CDL-C \
-  --ddim_steps 5 --output_root results/paper_5steps
 
 python evaluate.py --train CDL-C --test CDL-C \
   --ddim_steps 50 --output_root results/paper_50steps
 
-python evaluate.py --train CDL-C --test CDL-C \
-  --ddim_steps 100 --output_root results/paper_100steps
 ```
 
 To evaluate a newly trained checkpoint, override the default path:
