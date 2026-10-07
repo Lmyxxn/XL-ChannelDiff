@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+data/
+checkpoints/
+outputs/
+results/
+repro_models/
+*.mat
+*.pt
+*.pth
+*.zip
+*.log
+events.out.tfevents.*
