@@ -1,5 +1,21 @@
 # XL-Diff Reproduction Package
 
+## Paper
+
+This repository contains code for the following paper:
+
+**XL-ChannelDiff: An Efficient Diffusion-Based Multi-Domain Near-Field Channel Extrapolation Framework for XL-MIMO Systems**
+
+Read or download the paper on [IEEE Xplore](https://ieeexplore.ieee.org/document/11631639).
+
+## Citation
+
+If you use this code in your research, please cite:
+
+> M. Li, Y. Han, H. Xu, Y. Zhu, C.-K. Wen, and S. Jin, "XL-ChannelDiff: An Efficient Diffusion-Based Multi-Domain Near-Field Channel Extrapolation Framework for XL-MIMO Systems," *IEEE Transactions on Wireless Communications*, vol. 25, 2026, doi: [10.1109/TWC.2026.3716401](https://doi.org/10.1109/TWC.2026.3716401).
+
+## Overview
+
 This package contains the XL-Diff channel extrapolation implementation.
 Dataset files and pretrained weights are required separately for training
 and evaluation. Frequency-domain and time-domain experiments are excluded.
