@@ -17,8 +17,10 @@ If you use this code in your research, please cite:
 ## Overview
 
 This package contains the XL-Diff channel extrapolation implementation.
-Dataset files and pretrained weights are required separately for training
-and evaluation. Frequency-domain and time-domain experiments are excluded.
+The original pretrained checkpoint is included at
+`checkpoints/paper_original/model_best.pt`. Dataset files are required
+separately for training and evaluation. Frequency-domain and time-domain
+experiments are excluded.
 
 ## Package contents
 
@@ -30,7 +32,7 @@ and evaluation. Frequency-domain and time-domain experiments are excluded.
 - `ema.py`: exponential moving average state for training and resuming.
 - `data/*seed1234.mat`: expected training set and normalization source.
 - `data/*seed4321.mat`: expected test set.
-- `checkpoints/paper_original/model_best.pt`: expected pretrained checkpoint path.
+- `checkpoints/paper_original/model_best.pt`: included original pretrained checkpoint.
 
 ## Environment
 
