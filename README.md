@@ -124,4 +124,4 @@ If you use this code or dataset, please cite:
 
 ## Contact
 
-For questions or bug reports, please open a [GitHub issue](https://github.com/Lmyxxn/XL-Diff/issues).
+For questions, please contact Mengyuan Li at [mengyuan_li@seu.edu.cn](mailto:mengyuan_li@seu.edu.cn). Bug reports and suggestions are welcome through [GitHub Issues](https://github.com/Lmyxxn/XL-Diff/issues).
