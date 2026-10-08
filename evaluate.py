@@ -23,7 +23,8 @@ parser.add_argument('--save_channels', type=int, default=0)
 parser.add_argument('--ddim_steps', type=int, default=100)
 parser.add_argument('--ddim_eta', type=float, default=0.0)
 parser.add_argument('--checkpoint', type=str, default='checkpoints/paper_original/model_best.pt')
-parser.add_argument('--guidance_scale', type=float, default=1.0)
+parser.add_argument('--guidance_scale', type=float, default=0.1)
+parser.add_argument('--data_root', type=str, default='./data')
 parser.add_argument('--sample_mask_ratio_threshold', type=float, default=0.7)
 parser.add_argument('--run_complexity_analysis', action='store_true', help='Run model complexity analysis (time, FLOPs, parameters)')
 parser.add_argument('--output_root', type=str, required=True)
@@ -51,6 +52,7 @@ config.log_path = args.output_root
 config.model.ddim_eta = args.ddim_eta  # DDIM sampling parameter
 config.model.ddim_steps = args.ddim_steps  # Number of DDIM steps
 config.device = 'cuda:0'
+config.data.root = args.data_root
 
 # Define a mapping from string to class
 model_classes = {
@@ -77,7 +79,8 @@ diffuser.load_state_dict(contents['diffuser_state'])
 diffuser.eval()
 
 # Load the critic used for sampling guidance.
-discriminator = Discriminator(channels=2).to(config.device)
+critic_channels = contents['discriminator_state']['down_blocks.0.0.weight'].shape[1]
+discriminator = Discriminator(channels=2, time_conditioned=(critic_channels == 3)).to(config.device)
 discriminator.load_state_dict(contents['discriminator_state'])
 discriminator.eval()
 
@@ -92,12 +95,15 @@ ddim = CGANDDIM(
 
 seed = 42
 torch.manual_seed(seed)
+np.random.seed(seed)
+torch.cuda.manual_seed_all(seed)
 # Seeds for train and validation datasets
 train_seed, val_seed = 1234, 4321
 
 # Get training dataset for normalization
 config.data.channel = args.train
-dataset = Channels(train_seed, config, norm=config.data.norm_channels, num_rx=num_rx, mask_ratios=[0.5])
+stored_norm = config.data.get('normalization', None)
+dataset = Channels(train_seed, config, norm=stored_norm if stored_norm is not None else config.data.norm_channels, num_rx=num_rx, mask_ratios=[0.5])
 
 # Number of validation channels
 num_channels = 200
@@ -136,7 +142,7 @@ for mask_idx, mask_ratio in enumerate(mask_ratios):
     val_config = copy.deepcopy(config)
     val_config.data.channel      = args.test
     val_config.data.spacing_list = [0.5]
-    val_dataset = Channels(val_seed, val_config, norm=[dataset.mean, dataset.std], num_rx=num_rx, mask_ratios=[mask_ratio])
+    val_dataset = Channels(val_seed, val_config, norm=[dataset.mean, dataset.std], num_rx=num_rx, mask_ratios=[mask_ratio], split='test')
     val_loader  = DataLoader(val_dataset, batch_size=num_channels,
         shuffle=False, num_workers=0, drop_last=True)
 
@@ -346,9 +352,9 @@ for mask_idx, mask_ratio in enumerate(mask_ratios):
         H_partial = val_sample['H_partial'].cuda()
         mask1 = val_sample['mask'].cuda()
         mask = mask1.unsqueeze(1).repeat(1, 2, 1, 1).cuda()
-        oracle = H_full[:, 0, :, :] + 1j * H_full[:, 1, :, :]
+        oracle = (H_full[:, 0, :, :] + 1j * H_full[:, 1, :, :]) * float(dataset.std) + complex(dataset.mean)
 
-        mean_tensor = torch.tensor(dataset.mean, device=H_full.device, dtype=H_full.dtype)
+        mean_tensor = torch.tensor(complex(dataset.mean), device=H_full.device)
         std_tensor = torch.tensor(dataset.std, device=H_full.device, dtype=H_full.dtype)
         
         if torch.is_complex(mean_tensor) or torch.is_complex(std_tensor):
@@ -359,7 +365,7 @@ for mask_idx, mask_ratio in enumerate(mask_ratios):
             mean_real = mean_tensor
             std_real = std_tensor
         
-        init_val_H = mean_real + std_real * torch.randn_like(H_full)
+        init_val_H = torch.randn_like(H_full)
 
         # ---------------------------------------------------------
         # Model-only latency measurement
@@ -378,7 +384,7 @@ for mask_idx, mask_ratio in enumerate(mask_ratios):
             current = ddim.sample_backward(
                 init_val_H, H_partial, diffuser, discriminator, mask1, mask,
                 mask_ratio, args.sample_mask_ratio_threshold,
-                device=config.device, simple_var=True,
+                device=config.device, simple_var=False,
                 ddim_step=config.model.ddim_steps, eta=config.model.ddim_eta
             )
 
@@ -397,12 +403,12 @@ for mask_idx, mask_ratio in enumerate(mask_ratios):
             )
 
         boolean_mask = mask.bool()
-        H_random_real = mean_real + std_real * torch.randn_like(H_full)
+        H_random_real = torch.randn_like(H_full)
         random_generate = torch.where(boolean_mask, H_partial, H_random_real)
         
-        current_complex = current[:, 0, :, :] + 1j * current[:, 1, :, :]
-        random_complex = random_generate[:, 0, :, :] + 1j * random_generate[:, 1, :, :]
-        H_partial_complex = H_partial[:, 0, :, :] + 1j * H_partial[:, 1, :, :]
+        current_complex = (current[:, 0, :, :] + 1j * current[:, 1, :, :]) * float(dataset.std) + complex(dataset.mean)
+        random_complex = (random_generate[:, 0, :, :] + 1j * random_generate[:, 1, :, :]) * float(dataset.std) + complex(dataset.mean)
+        H_partial_complex = torch.where(mask1.bool(), oracle, torch.zeros_like(oracle))
 
         H_zero_complex = torch.zeros_like(oracle, dtype=torch.complex64)
 

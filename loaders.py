@@ -74,7 +74,7 @@ def load_first_subcarrier_from_revised_mat(filename):
 class Channels(Dataset):
     """MIMO Channels"""
 
-    def __init__(self, seed, config, norm=None, num_rx=1024, mask_ratios=[0.2]):
+    def __init__(self, seed, config, norm=None, num_rx=1024, mask_ratios=[0.2], split=None, validation_file=None):
         target_spacings = config.data.spacing_list
         target_channel = config.data.channel
 
@@ -84,10 +84,13 @@ class Channels(Dataset):
         self.mask_ratios = mask_ratios
         self.num_rx = num_rx
 
+        data_root = config.data.get('root', './data')
         for spacing in target_spacings:
-            filename = './data/%s_Nt1_Nr%d_QuaRIGA_UPA%.2f_seed%d.mat' % (
+            filename = os.path.join(data_root, '%s_Nt1_Nr%d_QuaRIGA_UPA%.2f_seed%d.mat' % (
                     target_channel, self.num_rx, spacing, seed
-            )
+            ))
+            if split == 'validation' and validation_file:
+                filename = validation_file
             self.filenames.append(filename)
 
             t0 = time.time()
@@ -106,6 +109,17 @@ class Channels(Dataset):
             (-1, self.channels.shape[-2], self.channels.shape[-1])
         )
 
+        if split in ('train', 'validation') and not validation_file:
+            if len(self.channels) <= 1000:
+                raise ValueError('At least 1001 channels are required for the validation holdout.')
+            order = np.random.default_rng(42).permutation(len(self.channels))
+            indices = order[1000:] if split == 'train' else order[:1000]
+            self.channels = self.channels[indices]
+        if split == 'test':
+            if len(self.channels) < 200:
+                raise ValueError('The manuscript evaluation requires 200 test samples.')
+            self.channels = self.channels[:200]
+
         # Normalize
         if type(norm) == list:
             self.mean = norm[0]
@@ -114,7 +128,7 @@ class Channels(Dataset):
             self.mean = np.mean(self.channels, axis=0)
             self.std = np.std(self.channels, axis=0)
         elif norm == 'global':
-            self.mean = 0.
+            self.mean = np.mean(self.channels)
             self.std = np.std(self.channels)
         else:
             self.mean = 0.
