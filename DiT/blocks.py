@@ -491,8 +491,10 @@ class MaskedMultiHeadCrossAttention(nn.Module):
         # Apply attention mask if provided
         if mask is not None:
             assert mask.shape == (B, 1, N), f"mask shape {mask.shape} should be (B, 1, N)"
-            # Expand mask to (B, 1, N, N) to mask both query and key positions
-            mask = mask.unsqueeze(-1) * mask.unsqueeze(-2)  # (B, 1, N, N)
+            # Only suppress unobserved keys; unknown queries still recover context.
+            mask = mask.unsqueeze(-2)  # (B, 1, 1, N)
+            if not mask.bool().any(dim=-1).all():
+                raise ValueError('Conditional attention requires an observed patch.')
 
             NEG_INF = -1e4 if attn.dtype == torch.float16 else -1e9
             attn = attn.masked_fill(mask == 0, NEG_INF)
