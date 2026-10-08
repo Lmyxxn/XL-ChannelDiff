@@ -9,21 +9,23 @@
 
 XL-ChannelDiff reconstructs complete near-field channels from partial channel observations using a conditional diffusion model. The framework combines a physics-aware Transformer backbone, mask-guided attention, WGAN-based supervision and sampling guidance, and RePaint-style refinement.
 
-**Release scope:** this repository provides the antenna-domain implementation, original pretrained checkpoint, and training/evaluation entry points. The paper also studies frequency- and spatial-domain extrapolation; those implementations are not included in this release.
+This repository provides the PyTorch implementation for antenna-domain channel extrapolation, together with the original pretrained checkpoint, dataset, and training and evaluation scripts.
 
 ## Framework
 
 ![Original paper architecture: WGAN-enhanced CDDIM channel extrapolation](assets/framework.png)
 
-*Architecture reproduced from the original paper. The figure presents the multi-domain framework; this release uses its 2D channel representation.*
+*Overview of the WGAN-enhanced conditional diffusion framework from the original paper.*
 
 <p align="center">
   <img src="assets/channel_extrapolation.png" alt="Original paper illustration of antenna-domain channel extrapolation" width="520">
 </p>
 
-*Antenna-domain extrapolation illustrated in the original paper: recover the full channel from partially observed entries.*
+*Channel extrapolation from partial observations, as illustrated in the original paper.*
 
 ## Installation
+
+Use a CUDA-enabled GPU with compatible PyTorch, CUDA, and xFormers versions.
 
 ```bash
 git clone https://github.com/Lmyxxn/XL-Diff.git
@@ -31,7 +33,7 @@ cd XL-Diff
 pip install -r requirements.txt
 ```
 
-Use a CUDA-enabled PyTorch environment. PyTorch, CUDA, and xFormers must be mutually compatible. The supplied evaluation script runs on CUDA; a CPU-only workflow is not provided. Run all commands from the repository root because dataset paths are relative.
+Run the following commands from the repository root.
 
 ## Dataset
 
@@ -43,7 +45,7 @@ keeping their filenames unchanged:
 | File | Use | Size |
 | --- | --- | --- |
 | [CDL-C_Nt1_Nr1024_QuaRIGA_UPA0.50_seed1234.mat](https://huggingface.co/datasets/lmyxxn/XL-Diff/resolve/main/CDL-C_Nt1_Nr1024_QuaRIGA_UPA0.50_seed1234.mat?download=true) | Training and normalization | Approximately 1.59 GB |
-| [CDL-C_Nt1_Nr1024_QuaRIGA_UPA0.50_seed4321.mat](https://huggingface.co/datasets/lmyxxn/XL-Diff/resolve/main/CDL-C_Nt1_Nr1024_QuaRIGA_UPA0.50_seed4321.mat?download=true) | Evaluation; also used for validation by the supplied training script | Approximately 31.83 MB |
+| [CDL-C_Nt1_Nr1024_QuaRIGA_UPA0.50_seed4321.mat](https://huggingface.co/datasets/lmyxxn/XL-Diff/resolve/main/CDL-C_Nt1_Nr1024_QuaRIGA_UPA0.50_seed4321.mat?download=true) | Validation and evaluation | Approximately 31.83 MB |
 
 ```text
 XL-Diff/
@@ -55,7 +57,7 @@ XL-Diff/
       model_best.pt
 ```
 
-The loader reads the first subcarrier and represents each channel as a `32 x 32` complex-valued array. Evaluation uses normalization statistics computed from the training file, so **both files are required even when using the pretrained checkpoint**.
+Each sample represents the first-subcarrier channel as a `32 x 32` complex-valued array. Place both files in `data/`: the training file supplies the normalization statistics used during evaluation.
 
 ## Pretrained Evaluation
 
@@ -73,37 +75,34 @@ To use a different checkpoint:
 python evaluate.py --train CDL-C --test CDL-C --ddim_steps 50 --checkpoint /absolute/path/to/model_best.pt --output_root results/custom
 ```
 
-## Repository Structure
-
-- `train.py`: fixed-seed training and checkpoint-resume entry.
-- `evaluate.py`: NMSE evaluation with configurable DDIM sampling steps.
-- `loaders.py`: MATLAB loading, normalization, and observation masks.
-- `cgan_enhanced_ddim.py`, `ddpm.py`: conditional diffusion sampling implementation.
-- `DiT/`: diffusion Transformer and its required layers.
-- `GAN/`: time-conditioned discriminator used for training and sampling guidance.
-- `ema.py`: exponential moving average state for training and resuming.
-- `data/*seed1234.mat`: expected training set and normalization source.
-- `data/*seed4321.mat`: expected test set.
-- `checkpoints/paper_original/model_best.pt`: included original pretrained checkpoint.
-- `assets/`: figures from the original paper.
-
 ## Training
 
 ```bash
 python train.py --gpu 0 --train CDL-C --seed 42 --output_root outputs/run
 ```
 
-Training saves `model_best.pt` when the validation noise-reconstruction loss
-improves and updates `model_latest.pt` for resuming. The bundled paper checkpoint
-is named `model_best.pt`; its weights are unchanged. Checkpoints are written under a configuration-specific subdirectory of `--output_root`; use the saved file's actual path when resuming.
-
-For an independent benchmark, use a separate held-out test split rather than the file used for validation during training.
+Checkpoints are saved in a configuration-specific subdirectory under `--output_root`. Training maintains `model_best.pt`, selected by validation noise-reconstruction loss, and `model_latest.pt` for resuming.
 
 To resume while retaining the model, optimizer, discriminator, and EMA states:
 
 ```bash
 python train.py --gpu 0 --train CDL-C --seed 42 --output_root outputs/run --resume /absolute/path/to/model_latest.pt
 ```
+
+## Repository Structure
+
+| Path | Description |
+| --- | --- |
+| `train.py` | Training and checkpoint resumption |
+| `evaluate.py` | NMSE evaluation with configurable DDIM sampling steps |
+| `loaders.py` | Dataset loading, normalization, and observation masks |
+| `cgan_enhanced_ddim.py`, `ddpm.py` | Conditional diffusion and sampling |
+| `DiT/` | Diffusion Transformer backbone |
+| `GAN/` | Time-conditioned discriminator |
+| `ema.py` | Exponential moving average utilities |
+| `data/` | Downloaded training and evaluation datasets |
+| `checkpoints/paper_original/` | Original pretrained checkpoint |
+| `assets/` | Figures from the original paper |
 
 ## Citation
 
@@ -123,6 +122,6 @@ If you use this code or dataset, please cite:
 }
 ```
 
-## Questions
+## Contact
 
-Please open a [GitHub issue](https://github.com/Lmyxxn/XL-Diff/issues) for questions about this release. Include the command, relevant error message, and your Python/PyTorch/CUDA/xFormers versions when reporting a problem.
+For questions or bug reports, please open a [GitHub issue](https://github.com/Lmyxxn/XL-Diff/issues).
