@@ -17,11 +17,18 @@ This repository provides the PyTorch implementation for antenna-domain channel e
 
 *Overview of the WGAN-enhanced conditional diffusion framework from the original paper.*
 
-<p align="center">
-  <img src="assets/channel_extrapolation.png" alt="Original paper illustration of antenna-domain channel extrapolation" width="520">
-</p>
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="assets/channel_extrapolation.png" alt="2D antenna-domain channel extrapolation" width="100%"></td>
+    <td align="center" width="50%"><img src="assets/channel_extrapolation_frequency_spatial.png" alt="3D frequency- and spatial-domain channel extrapolation" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center">(a) 2D antenna-domain extrapolation</td>
+    <td align="center">(b) 3D frequency- and spatial-domain extrapolation</td>
+  </tr>
+</table>
 
-*Channel extrapolation from partial observations, as illustrated in the original paper.*
+*Multi-domain channel extrapolation tasks from the original paper. Gray entries denote unknown channels.*
 
 ## Installation
 
