@@ -2,9 +2,10 @@ import torch
 import torch.nn as nn
 
 class Discriminator(nn.Module):
-    def __init__(self, channels=2):
+    def __init__(self, channels=2, time_conditioned=False):
         super().__init__()
-        self.channels = channels+1
+        self.time_conditioned = time_conditioned
+        self.channels = channels + int(time_conditioned)
 
         self.down_blocks = nn.ModuleList([
             # 32x32 -> 16x16
@@ -41,12 +42,14 @@ class Discriminator(nn.Module):
             nn.init.constant_(m.weight, 1)
             nn.init.constant_(m.bias, 0)
     
-    def forward(self, x, t):
-        x = torch.cat([x, t], dim=1)
+    def forward(self, x, t=None):
+        if self.time_conditioned:
+            if t is None:
+                raise ValueError('Historical time-conditioned weights require a timestep.')
+            x = torch.cat([x, t], dim=1)
 
         for down_block in self.down_blocks:
             x = down_block(x)
 
         out = self.final(x)
         return out.view(-1, 1)
-
