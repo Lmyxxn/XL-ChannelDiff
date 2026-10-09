@@ -756,6 +756,17 @@ if len(nmse_summary_records) > 0:
         'mean_per_mask_nmse_db': float(np.mean(ddim_nmse_db)),
     }, nmse_summary_save_path)
     print(f"Saved NMSE summary to: {nmse_summary_save_path}")
+    import csv
+    summary_csv = os.path.join(args.output_root, 'summary.csv')
+    with open(summary_csv, 'w', newline='') as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(nmse_summary_records[0]))
+        writer.writeheader()
+        writer.writerows(nmse_summary_records)
+    summary_array = np.array(
+        [tuple(record.values()) for record in nmse_summary_records],
+        dtype=[(key, 'f8') for key in nmse_summary_records[0]],
+    )
+    np.save(os.path.join(args.output_root, 'summary.npy'), summary_array)
 
 print(f"\n{'='*50}")
 print("All mask ratios testing completed!")
