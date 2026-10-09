@@ -82,6 +82,16 @@ To use a different checkpoint:
 python evaluate.py --train CDL-C --test CDL-C --ddim_steps 50 --checkpoint /absolute/path/to/model_best.pt --output_root results/custom
 ```
 
+## Baseline Evaluation
+
+Evaluate Random, Partial (zero filling), and 2D DFT-OMP on the same 200 test channels and observation masks:
+
+```bash
+python evaluate_baseline.py --data_root data --output_root results/baselines --sparsity 16 --seed 42
+```
+
+`--sparsity` controls the number of OMP coefficients (default: 64). Random retains observed entries and fills missing entries with Gaussian noise using the original baseline's scaling. Results are saved in `baseline_summary.csv` and `baseline_nmse_per_sample.npy`; observation masks are saved in `masks.npy`.
+
 ## Training
 
 ```bash
@@ -102,6 +112,7 @@ python train.py --gpu 0 --train CDL-C --seed 42 --output_root outputs/run --resu
 | --- | --- |
 | `train.py` | Training and checkpoint resumption |
 | `evaluate.py` | NMSE evaluation with configurable DDIM sampling steps |
+| `evaluate_baseline.py` | Random, Partial, and OMP evaluation |
 | `loaders.py` | Dataset loading, normalization, and observation masks |
 | `cgan_enhanced_ddim.py`, `ddpm.py` | Conditional diffusion and sampling |
 | `DiT/` | Diffusion Transformer backbone |
